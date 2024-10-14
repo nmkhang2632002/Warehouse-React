@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { useMemo } from "react";
 import * as THREE from "three";
 async function readFile(path: string) {
   const data = await d3.csv(path, fnParse);
