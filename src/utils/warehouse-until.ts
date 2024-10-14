@@ -1,5 +1,4 @@
 import * as d3 from "d3";
-import { useMemo } from "react";
 import * as THREE from "three";
 async function readFile(path: string) {
   const data = await d3.csv(path, fnParse);
@@ -53,6 +52,7 @@ export function fnBuildWarehouse(
     { cubeGeometry: THREE.BoxGeometry; edgeGeometry: THREE.EdgesGeometry }
   >();
 
+  const areaMap = new Map<string, THREE.Group>();
   const edgeMaterial = new THREE.LineBasicMaterial({
     color: fnGetBackGroundColorInvert(initialBackgroundColor),
     transparent: true,
@@ -79,6 +79,7 @@ export function fnBuildWarehouse(
     }
 
     const cubeMaterial = new THREE.MeshBasicMaterial({
+      opacity: 0.7,
       transparent: true,
       wireframe: false,
     });
@@ -88,7 +89,6 @@ export function fnBuildWarehouse(
     edge.userData.type = "edge";
 
     const pallet = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    pallet.material.opacity = 0.2;
     pallet.userData.type = "pallet";
     pallet.renderOrder = 1;
 
@@ -108,11 +108,54 @@ export function fnBuildWarehouse(
       type: "slot",
       numPallets: 1,
       selected: false,
+      area: data["AREA"] ?? data["area"],
     };
+    if (!areaMap.has(slot.userData.area)) {
+      areaMap.set(slot.userData.area, new THREE.Group());
+    }
+    areaMap.get(slot.userData.area)!.add(slot);
+  }
 
-    warehouse.add(slot);
-    data.visualObj = slot;
+  for (let [area, value] of areaMap) {
+    const textSprite = createTextSprite(area);
+    const boundingBox = new THREE.Box3().setFromObject(value);
+    const center = boundingBox.getCenter(new THREE.Vector3());
+    textSprite.position.set(center.x, boundingBox.max.y + 10, center.z);
+    value.add(textSprite);
+    warehouse.add(value);
   }
 
   return warehouse;
+}
+
+function createTextSprite(text: string): THREE.Sprite {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (context) {
+    const fontSize = 200;
+    context.font = `${fontSize}px Arial`;
+    const textWidth = context.measureText(text).width;
+    canvas.width = textWidth + 20;
+    canvas.height = fontSize + 20;
+
+    // Set background color to transparent
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Set text properties
+    context.fillStyle = "black"; // Text color
+    context.font = `${fontSize}px Arial`; // Font size and family
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+
+    // Draw text
+    context.fillText(text, canvas.width / 2, canvas.height / 2);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+  const sprite = new THREE.Sprite(spriteMaterial);
+  sprite.scale.set(canvas.width / 10, canvas.height / 10, 1); // Adjust scale as needed
+
+  return sprite;
 }

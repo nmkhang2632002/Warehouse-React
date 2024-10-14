@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 import { fnBuildWarehouse, getWarehouseData } from "../utils/warehouse-until";
+import warehouseData from "../data/data";
 
 const WarehouseVisualizer = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -15,10 +16,10 @@ const WarehouseVisualizer = () => {
 
     const init = async () => {
       const data = await getWarehouseData();
-      const warehouseScene = fnBuildWarehouse(data);
+      const warehouseScene = fnBuildWarehouse(warehouseData);
 
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xecf0f1); // Light background color
+      scene.background = new THREE.Color(0xe6e8e1); // Light beige background color
 
       camera = new THREE.PerspectiveCamera(
         60,
@@ -36,15 +37,15 @@ const WarehouseVisualizer = () => {
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
 
-      warehouseScene.position.set(1000, 0, 0);
+      warehouseScene.position.set(0, 0, 0);
       scene.add(warehouseScene);
 
       // Add ambient light
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
       scene.add(ambientLight);
 
       // Add directional light
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
@@ -59,11 +60,13 @@ const WarehouseVisualizer = () => {
       const gridHelper = new THREE.GridHelper(
         gridSize,
         gridDivisions,
-        0x2ecc71,
-        0x2ecc71
+        0x00ff00,
+        0x00ff00
       );
       gridHelper.position.y = box.min.y - 0.01; // Place grid slightly below the warehouse
-      gridHelper.material.opacity = 0.35;
+      gridHelper.position.x = center.x;
+      gridHelper.position.z = center.z;
+      gridHelper.material.opacity = 0.15;
       gridHelper.material.transparent = true;
       scene.add(gridHelper);
 
@@ -71,7 +74,7 @@ const WarehouseVisualizer = () => {
       const maxDim = Math.max(size.x, size.y, size.z);
       const fov = camera.fov * (Math.PI / 180);
       let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-      cameraZ *= 1.5; // Zoom out a bit more
+      cameraZ *= 2; // Zoom out a bit more
       camera.position.set(
         center.x + cameraZ,
         center.y + cameraZ / 2,
@@ -80,6 +83,20 @@ const WarehouseVisualizer = () => {
       camera.lookAt(center);
 
       controls.target.copy(center);
+      controls.maxDistance = cameraZ;
+      // Add outer border
+      const borderGeometry = new THREE.BoxGeometry(
+        size.x * 1.05,
+        size.y * 1.05,
+        size.z * 1.05
+      );
+      const borderEdges = new THREE.EdgesGeometry(borderGeometry);
+      const borderLine = new THREE.LineSegments(
+        borderEdges,
+        new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 })
+      );
+      borderLine.position.copy(center);
+      scene.add(borderLine);
 
       const animate = () => {
         requestAnimationFrame(animate);
