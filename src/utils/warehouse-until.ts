@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import * as THREE from "three";
+import { colorMap } from "../data/color";
 async function readFile(path: string) {
   const data = await d3.csv(path, fnParse);
   return data;
@@ -117,23 +118,35 @@ export function fnBuildWarehouse(
   }
 
   for (let [area, value] of areaMap) {
-    const textSprite = createTextSprite(area);
+    const textSprite = createTextSprite(area, colorMap[area]);
     const boundingBox = new THREE.Box3().setFromObject(value);
+    const size = boundingBox.getSize(new THREE.Vector3());
     const center = boundingBox.getCenter(new THREE.Vector3());
-    textSprite.position.set(center.x, boundingBox.max.y + 10, center.z);
+    // Position text above the area
+    textSprite.position.set(center.x, boundingBox.max.y + 40, center.z);
     value.add(textSprite);
+    // Add plan to area
+    const planGeometry = new THREE.PlaneGeometry(size.x, size.z);
+    const planMaterial = new THREE.MeshBasicMaterial({
+      color: colorMap[area],
+      side: THREE.DoubleSide,
+    });
+    const plan = new THREE.Mesh(planGeometry, planMaterial);
+    plan.position.set(center.x, boundingBox.min.y - 0.1, center.z);
+    plan.rotateX(Math.PI / 2);
+    value.add(plan);
     warehouse.add(value);
   }
 
   return warehouse;
 }
 
-function createTextSprite(text: string): THREE.Sprite {
+function createTextSprite(text: string, color: string): THREE.Sprite {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
 
   if (context) {
-    const fontSize = 200;
+    const fontSize = 400;
     context.font = `${fontSize}px Arial`;
     const textWidth = context.measureText(text).width;
     canvas.width = textWidth + 20;
@@ -143,7 +156,7 @@ function createTextSprite(text: string): THREE.Sprite {
     context.clearRect(0, 0, canvas.width, canvas.height);
 
     // Set text properties
-    context.fillStyle = "black"; // Text color
+    context.fillStyle = color; // Text color
     context.font = `${fontSize}px Arial`; // Font size and family
     context.textAlign = "center";
     context.textBaseline = "middle";

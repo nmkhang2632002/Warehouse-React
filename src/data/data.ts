@@ -22,3 +22,55 @@ areas.forEach((area, areaIndex) => {
   }
 });
 export default warehouseData;
+
+const LShape = [
+  {
+    LOCATION: "A10-100-R-2052-1914-0",
+    WIDTH: 48,
+    DEPTH: 48,
+    HEIGHT: 82,
+    X: 2052,
+    Y: 1914,
+    Z: 0,
+    AISLE: "A10",
+    CENTERAXIS: "X",
+    AISLESIDE: "R",
+    BAY: 100,
+    WAREHOUSE: "WARREN",
+    AREA: "A",
+    LEVEL: 1,
+  },
+  {
+    LOCATION: "A10-101-R-2052-1962-0",
+    WIDTH: 48,
+    DEPTH: 48,
+    HEIGHT: 82,
+    X: 2052,
+    Y: 1962,
+    Z: 0,
+    AISLE: "A10",
+    CENTERAXIS: "X",
+    AISLESIDE: "R",
+    BAY: 101,
+    WAREHOUSE: "WARREN",
+    AREA: "A",
+    LEVEL: 1,
+  },
+  {
+    LOCATION: "A10-102-R-2100-1962-0",
+    WIDTH: 48,
+    DEPTH: 48,
+    HEIGHT: 82,
+    X: 2100,
+    Y: 1962,
+    Z: 0,
+    AISLE: "A10",
+    CENTERAXIS: "X",
+    AISLESIDE: "R",
+    BAY: 102,
+    WAREHOUSE: "WARREN",
+    AREA: "A",
+    LEVEL: 1,
+  },
+];
+export { LShape };

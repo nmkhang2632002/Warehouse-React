@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 import { fnBuildWarehouse, getWarehouseData } from "../utils/warehouse-until";
-import warehouseData from "../data/data";
 
 const WarehouseVisualizer = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -16,7 +15,7 @@ const WarehouseVisualizer = () => {
 
     const init = async () => {
       const data = await getWarehouseData();
-      const warehouseScene = fnBuildWarehouse(warehouseData);
+      const warehouseScene = fnBuildWarehouse(data);
 
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0xe6e8e1); // Light beige background color
