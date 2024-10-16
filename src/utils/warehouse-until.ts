@@ -111,10 +111,10 @@ export function fnBuildWarehouse(
       selected: false,
       area: data["AREA"] ?? data["area"],
     };
-    if (!areaMap.has(slot.userData.area)) {
-      areaMap.set(slot.userData.area, new THREE.Group());
+    if (!areaMap.has(data["AREA"] ?? data["area"])) {
+      areaMap.set(data["AREA"] ?? data["area"], new THREE.Group());
     }
-    areaMap.get(slot.userData.area)!.add(slot);
+    areaMap.get(data["AREA"] ?? data["area"])!.add(slot);
   }
 
   for (let [area, value] of areaMap) {

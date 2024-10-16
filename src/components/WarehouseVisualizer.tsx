@@ -1,33 +1,38 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 import { fnBuildWarehouse, getWarehouseData } from "../utils/warehouse-until";
+import warehouseData from "../data/data";
 
 const WarehouseVisualizer = () => {
   const ref = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const carRef = useRef<THREE.Object3D | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
   useEffect(() => {
-    let scene: THREE.Scene;
-    let camera: THREE.PerspectiveCamera;
-    let renderer: THREE.WebGLRenderer;
     let controls: OrbitControls;
 
     const init = async () => {
       const data = await getWarehouseData();
       const warehouseScene = fnBuildWarehouse(data);
 
-      scene = new THREE.Scene();
+      const scene = new THREE.Scene();
+      sceneRef.current = scene;
       scene.background = new THREE.Color(0xe6e8e1); // Light beige background color
-
-      camera = new THREE.PerspectiveCamera(
+      const camera = new THREE.PerspectiveCamera(
         60,
         window.innerWidth / window.innerHeight,
         0.1,
         10000
       );
+      cameraRef.current = camera;
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      rendererRef.current = renderer;
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(window.devicePixelRatio);
       ref.current?.appendChild(renderer.domElement);
@@ -35,13 +40,47 @@ const WarehouseVisualizer = () => {
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
-
+      //add warehouse to the scene
       warehouseScene.position.set(0, 0, 0);
       scene.add(warehouseScene);
 
-      // Add ambient light
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      scene.add(ambientLight);
+      // Load the fol model
+      const loader = new GLTFLoader();
+      loader.load(
+        "/assets/scene.gltf",
+        function (gltf) {
+          // Adjust the scale and position of the loaded object
+          gltf.scene.scale.set(1, 1, 1); // Adjust scale as needed
+          gltf.scene.position.set(800, 0, 1000); // Adjust position as needed
+          scene.add(gltf.scene);
+          carRef.current = gltf.scene;
+        },
+        undefined,
+        function (error) {
+          console.error(
+            "An error happened while loading the GLTF file:",
+            error
+          );
+        }
+      );
+
+      loader.load(
+        "/assets/scene.gltf",
+        function (gltf) {
+          // Adjust the scale and position of the loaded object
+          gltf.scene.scale.set(1, 1, 1); // Adjust scale as needed
+          gltf.scene.position.set(100, 0, 1000); // Adjust position as needed
+          scene.add(gltf.scene);
+          carRef.current = gltf.scene;
+        },
+        undefined,
+        function (error) {
+          console.error(
+            "An error happened while loading the GLTF file:",
+            error
+          );
+        }
+      );
 
       // Add directional light
       const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -83,6 +122,7 @@ const WarehouseVisualizer = () => {
 
       controls.target.copy(center);
       controls.maxDistance = cameraZ;
+
       // Add outer border
       const borderGeometry = new THREE.BoxGeometry(
         size.x * 1.05,
@@ -97,19 +137,14 @@ const WarehouseVisualizer = () => {
       borderLine.position.copy(center);
       scene.add(borderLine);
 
-      const animate = () => {
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-      };
-
-      animate();
       setLoading(false);
 
       const handleResize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        if (camera && renderer) {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        }
       };
 
       window.addEventListener("resize", handleResize);
@@ -121,6 +156,45 @@ const WarehouseVisualizer = () => {
     };
 
     init();
+
+    // Animation loop
+    const animate = () => {
+      requestAnimationFrame(animate);
+      if (controls) controls.update();
+      if (rendererRef.current && sceneRef.current && cameraRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
+    };
+    animate();
+  }, []);
+
+  useEffect(() => {
+    // Add keyboard event listener for car movement
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!carRef.current) return;
+
+      const moveDistance = 10; // Adjust this value to change movement speed
+      switch (event.key) {
+        case "ArrowUp":
+          carRef.current.position.z += moveDistance;
+          break;
+        case "ArrowDown":
+          carRef.current.position.z -= moveDistance;
+          break;
+        case "ArrowLeft":
+          carRef.current.position.x -= moveDistance;
+          break;
+        case "ArrowRight":
+          carRef.current.position.x += moveDistance;
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   return (
@@ -140,6 +214,22 @@ const WarehouseVisualizer = () => {
           Loading Warehouse...
         </div>
       )}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          color: "#333",
+          fontSize: "16px",
+          fontFamily: "Arial, sans-serif",
+          backgroundColor: "rgba(255, 255, 255, 0.7)",
+          padding: "10px",
+          borderRadius: "5px",
+        }}
+      >
+        Use arrow keys to move the car
+      </div>
     </div>
   );
 };
